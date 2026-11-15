@@ -134,6 +134,9 @@ td.num{font-variant-numeric:tabular-nums;direction:ltr;text-align:start}
 .sjbox small.err{color:var(--leave);font-weight:600}
 .sjbox small.conn{color:var(--muted);font-size:11px}
 .sjbox small:empty{display:none}
+.sjtr{display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--ink);background:var(--chip);border-radius:10px;padding:8px 10px}
+.sjtr:empty{display:none}
+.sjtr b{color:var(--muted);font-weight:600}
 .sjbox small{font-size:12px;color:var(--muted);min-height:16px}
 td.sj{color:var(--brand);font-weight:600;white-space:normal;min-width:120px}
 .dash{color:#c9c2b2;font-weight:400}
@@ -300,7 +303,10 @@ const palette = ['#0f5c4a','#147a62','#2f6f8f','#7a4e9c','#b4532a','#9a7b1f','#3
 const $ = s => document.querySelector(s);
 const state = {q:'', jobs:new Set(), status:'all', view:'table'};
 const OV = {}; // n -> {assetId}
-const SJ = {}; // n -> suggested job text
+const SJ = {}; // n -> {text, ar, bn}
+const sjT = n => SJ[n] ? SJ[n].text : '';
+const sjD = n => { const e=SJ[n]; if(!e) return ''; return (LANG==='bn' ? e.bn : e.ar) || e.text; };
+const sjAll = n => { const e=SJ[n]; return e ? [e.text,e.ar,e.bn].join(' ') : ''; };
 const isMobile=()=>window.matchMedia('(max-width:700px)').matches;
 const isOpen=()=>$('#ov').classList.contains('open')||document.body.classList.contains('dm');
 let savedY=0;
@@ -314,13 +320,13 @@ const I18N={
 ar:{title:'بيانات العاملين',subtitle:'مقر السكن المركزي — دليل السائقين والعمال',actual:'العمل الفعلي',hint:'يمكنك اختيار أكثر من عمل',search:'ابحث بالاسم أو رقم الإقامة أو الجوال…',all:'الكل',onDuty:'على رأس العمل',onLeave:'إجازة',leaveStat:'في إجازة',footer:'المصدر: ردود النموذج 1 — بيانات السائقين في مقر السكن المركزي',close:'إغلاق',back:'رجوع',
  total:'إجمالي العاملين',allBD:'جميعهم من بنجلاديش',ofTotal:'{0}٪ من الإجمالي',noPhoto:'بدون صورة شخصية',needs:'تحتاج استكمال',complete:'مكتملة ✓',selected:'تم اختيار {0}',jobsN:'{0} مهنة',allJobs:'جميع المهن',count:'عرض {0} من {1} عامل',noResults:'لا توجد نتائج مطابقة للبحث',
  thN:'م',thName:'اسم العامل',nat:'الجنسية',iqama:'رقم الإقامة',mobile:'رقم الجوال',sj:'المهنة المقترحة',thPhoto:'الصورة',noPic:'لا توجد صورة شخصية لهذا العامل',updPhoto:'تحديث الصورة',addPhoto:'إضافة صورة',revert:'استعادة الصورة السابقة',serial:'الرقم التسلسلي',copy:'نسخ',
- sjPh:'اكتب المهنة المقترحة لهذا العامل…',save:'حفظ',saveNA:'الحفظ غير متاح حالياً',photoLbl:'الصورة الشخصية',avail:'متوفرة',unavail:'غير متوفرة',updated:'محدّثة',call:'اتصال',copied:'تم النسخ:',copyFail:'تعذّر النسخ — حدّد الرقم يدوياً',
- pickImg:'اختر ملف صورة',uploading:'جارٍ رفع الصورة…',uploaded:'تم تحديث الصورة ✓',uploadFail:'تعذّر رفع الصورة، حاول مرة أخرى',reverted:'تمت استعادة الصورة السابقة',revertFail:'تعذّرت الاستعادة',saved:'محفوظ ✓',saving:'جارٍ الحفظ…',savedOk:'تم الحفظ ✓',saveFail:'تعذّر الحفظ — حاول مرة أخرى',noPerm:'لا تملك صلاحية التعديل — افتح الموقع بحسابك في Claude',connNone:'ملاحظة: الحفظ المشترك غير متاح في هذا العرض، لذلك يُحفظ على هذا الجهاز فقط. افتح الموقع من تطبيق Claude أو بعد تسجيل الدخول ليراه الجميع.',savedLocal:'تم الحفظ على هذا الجهاز ✓ (سيُرفع للموقع عند توفر الاتصال)',unsaved:'لم يُحفظ بعد — اضغط حفظ'},
+ sjPh:'اكتب المهنة بأي لغة وستُترجم للعربية والبنغالية…',save:'حفظ',saveNA:'الحفظ غير متاح حالياً',photoLbl:'الصورة الشخصية',avail:'متوفرة',unavail:'غير متوفرة',updated:'محدّثة',call:'اتصال',copied:'تم النسخ:',copyFail:'تعذّر النسخ — حدّد الرقم يدوياً',
+ pickImg:'اختر ملف صورة',uploading:'جارٍ رفع الصورة…',uploaded:'تم تحديث الصورة ✓',uploadFail:'تعذّر رفع الصورة، حاول مرة أخرى',reverted:'تمت استعادة الصورة السابقة',revertFail:'تعذّرت الاستعادة',saved:'محفوظ ✓',saving:'جارٍ الحفظ…',translating:'جارٍ الترجمة…',arLbl:'عربي',bnLbl:'بنغالي',savedOk:'تم الحفظ ✓',saveFail:'تعذّر الحفظ — حاول مرة أخرى',noPerm:'لا تملك صلاحية التعديل — افتح الموقع بحسابك في Claude',connNone:'ملاحظة: الحفظ المشترك غير متاح في هذا العرض، لذلك يُحفظ على هذا الجهاز فقط. افتح الموقع من تطبيق Claude أو بعد تسجيل الدخول ليراه الجميع.',savedLocal:'تم الحفظ على هذا الجهاز ✓ (سيُرفع للموقع عند توفر الاتصال)',unsaved:'لم يُحفظ بعد — اضغط حفظ'},
 bn:{title:'কর্মীদের তথ্য',subtitle:'কেন্দ্রীয় আবাসন সদর দপ্তর — চালক ও কর্মীদের তালিকা',actual:'প্রকৃত কাজ',hint:'একাধিক কাজ নির্বাচন করতে পারেন',search:'নাম, ইকামা নম্বর বা মোবাইল নম্বর দিয়ে খুঁজুন…',all:'সকল',onDuty:'কর্মরত',onLeave:'ছুটিতে',leaveStat:'ছুটিতে',footer:'উৎস: ফর্মের উত্তর ১ — কেন্দ্রীয় আবাসন সদর দপ্তরের চালকদের তথ্য',close:'বন্ধ করুন',back:'ফিরে যান',
  total:'মোট কর্মী',allBD:'সবাই বাংলাদেশের',ofTotal:'মোটের {0}%',noPhoto:'ছবি নেই',needs:'সম্পূর্ণ করতে হবে',complete:'সম্পূর্ণ ✓',selected:'{0}টি নির্বাচিত',jobsN:'{0}টি পেশা',allJobs:'সকল পেশা',count:'মোট {1} জনের মধ্যে {0} জন দেখানো হচ্ছে',noResults:'কোনো ফলাফল পাওয়া যায়নি',
  thN:'ক্রম',thName:'কর্মীর নাম',nat:'জাতীয়তা',iqama:'ইকামা নম্বর',mobile:'মোবাইল নম্বর',sj:'প্রস্তাবিত পেশা',thPhoto:'ছবি',noPic:'এই কর্মীর কোনো ছবি নেই',updPhoto:'ছবি হালনাগাদ করুন',addPhoto:'ছবি যোগ করুন',revert:'আগের ছবি ফিরিয়ে আনুন',serial:'ক্রমিক নম্বর',copy:'কপি',
- sjPh:'এই কর্মীর জন্য প্রস্তাবিত পেশা লিখুন…',save:'সংরক্ষণ করুন',saveNA:'এখন সংরক্ষণ করা যাচ্ছে না',photoLbl:'ব্যক্তিগত ছবি',avail:'আছে',unavail:'নেই',updated:'হালনাগাদকৃত',call:'কল করুন',copied:'কপি হয়েছে:',copyFail:'কপি করা যায়নি — নম্বরটি নিজে নির্বাচন করুন',
- pickImg:'একটি ছবির ফাইল বাছাই করুন',uploading:'ছবি আপলোড হচ্ছে…',uploaded:'ছবি হালনাগাদ হয়েছে ✓',uploadFail:'ছবি আপলোড করা যায়নি, আবার চেষ্টা করুন',reverted:'আগের ছবি ফিরিয়ে আনা হয়েছে',revertFail:'ফিরিয়ে আনা যায়নি',saved:'সংরক্ষিত ✓',saving:'সংরক্ষণ হচ্ছে…',savedOk:'সংরক্ষণ হয়েছে ✓',saveFail:'সংরক্ষণ করা যায়নি — আবার চেষ্টা করুন',noPerm:'আপনার সম্পাদনার অনুমতি নেই — আপনার Claude অ্যাকাউন্ট দিয়ে খুলুন',connNone:'দ্রষ্টব্য: এই ভিউতে যৌথ সংরক্ষণ নেই, তাই শুধু এই ডিভাইসে সংরক্ষিত হবে। সবাই দেখতে চাইলে Claude অ্যাপ থেকে বা লগইন করে খুলুন।',savedLocal:'এই ডিভাইসে সংরক্ষিত ✓ (সংযোগ পেলে সাইটে যাবে)',unsaved:'এখনও সংরক্ষিত হয়নি — সংরক্ষণ চাপুন'}};
+ sjPh:'যেকোনো ভাষায় পেশা লিখুন — আরবি ও বাংলায় অনুবাদ হবে…',save:'সংরক্ষণ করুন',saveNA:'এখন সংরক্ষণ করা যাচ্ছে না',photoLbl:'ব্যক্তিগত ছবি',avail:'আছে',unavail:'নেই',updated:'হালনাগাদকৃত',call:'কল করুন',copied:'কপি হয়েছে:',copyFail:'কপি করা যায়নি — নম্বরটি নিজে নির্বাচন করুন',
+ pickImg:'একটি ছবির ফাইল বাছাই করুন',uploading:'ছবি আপলোড হচ্ছে…',uploaded:'ছবি হালনাগাদ হয়েছে ✓',uploadFail:'ছবি আপলোড করা যায়নি, আবার চেষ্টা করুন',reverted:'আগের ছবি ফিরিয়ে আনা হয়েছে',revertFail:'ফিরিয়ে আনা যায়নি',saved:'সংরক্ষিত ✓',saving:'সংরক্ষণ হচ্ছে…',translating:'অনুবাদ হচ্ছে…',arLbl:'আরবি',bnLbl:'বাংলা',savedOk:'সংরক্ষণ হয়েছে ✓',saveFail:'সংরক্ষণ করা যায়নি — আবার চেষ্টা করুন',noPerm:'আপনার সম্পাদনার অনুমতি নেই — আপনার Claude অ্যাকাউন্ট দিয়ে খুলুন',connNone:'দ্রষ্টব্য: এই ভিউতে যৌথ সংরক্ষণ নেই, তাই শুধু এই ডিভাইসে সংরক্ষিত হবে। সবাই দেখতে চাইলে Claude অ্যাপ থেকে বা লগইন করে খুলুন।',savedLocal:'এই ডিভাইসে সংরক্ষিত ✓ (সংযোগ পেলে সাইটে যাবে)',unsaved:'এখনও সংরক্ষিত হয়নি — সংরক্ষণ চাপুন'}};
 const JOBS_BN={'اجازة':'ছুটি','الصيانة و التشغيل':'রক্ষণাবেক্ষণ ও পরিচালনা','حارس':'প্রহরী','حداد':'লোহার মিস্ত্রি','سواق باص':'বাস চালক','سواق بوبكات':'ববক্যাট চালক','سواق شيول':'লোডার (শোভেল) চালক','سواق قلاب':'ডাম্প ট্রাক চালক','شيول':'লোডার (শোভেল)','صيانة':'রক্ষণাবেক্ষণ','عامل حداد':'লোহার কাজের শ্রমিক','عامل رش':'স্প্রে শ্রমিক','عامل كشط':'স্ক্র্যাপিং শ্রমিক','عامل ونش':'ক্রেন শ্রমিক','مستودع الانارة':'আলোকসজ্জা গুদাম','مكتب':'অফিস','نظافة':'পরিচ্ছন্নতা'};
 let LANG='ar'; try{const s=localStorage.getItem('lang'); if(s==='bn'||s==='ar') LANG=s;}catch{}
 const T=(k,...a)=>(I18N[LANG][k]??I18N.ar[k]??k).replace(/\{(\d)\}/g,(_,i)=>a[i]);
@@ -372,7 +378,7 @@ function filtered(){
     if(state.jobs.size && !state.jobs.has(d.job)) return false;
     if(state.status==='leave' && d.job!==LEAVE) return false;
     if(state.status==='work' && d.job===LEAVE) return false;
-    if(q && !(norm(d.name).includes(q) || d.iq.includes(q) || d.ph.includes(q) || norm(d.job).includes(q) || norm(J(d.job)).includes(q) || norm(SJ[d.n]||'').includes(q))) return false;
+    if(q && !(norm(d.name).includes(q) || d.iq.includes(q) || d.ph.includes(q) || norm(d.job).includes(q) || norm(J(d.job)).includes(q) || norm(sjAll(d.n)).includes(q))) return false;
     return true;
   });
 }
@@ -386,7 +392,7 @@ function render(){
   if(!rows.length){$('#list').innerHTML=`<div class="empty">${T('noResults')}</div>`;return;}
   {
     $('#list').innerHTML = `<div class="tbl"><table><thead><tr>${['thN','thName','nat','iqama','mobile','actual','sj','thPhoto'].map(k=>`<th>${T(k)}</th>`).join('')}</tr></thead><tbody>`+
-      rows.map(d=>`<tr class="r" data-n="${d.n}"><td class="c-n">${d.n}</td><td class="c-name"><b>${d.name}</b></td><td class="c-nat">${NAT(d.nat)}</td><td class="num c-iq">${d.iq}</td><td class="num c-ph"><span class="phi">📞</span>${d.ph}</td><td class="c-job">${tag(d.job)}</td><td class="sj c-sj${SJ[d.n]?'':' empty-sj'}"><span class="sjl">${T('sj')}: </span>${SJ[d.n]?esc(SJ[d.n]):'<span class="dash">—</span>'}</td><td class="c-pic">${mini(d)}</td></tr>`).join('')+
+      rows.map(d=>`<tr class="r" data-n="${d.n}"><td class="c-n">${d.n}</td><td class="c-name"><b>${d.name}</b></td><td class="c-nat">${NAT(d.nat)}</td><td class="num c-iq">${d.iq}</td><td class="num c-ph"><span class="phi">📞</span>${d.ph}</td><td class="c-job">${tag(d.job)}</td><td class="sj c-sj${sjT(d.n)?'':' empty-sj'}"><span class="sjl">${T('sj')}: </span>${sjT(d.n)?esc(sjD(d.n)):'<span class="dash">—</span>'}</td><td class="c-pic">${mini(d)}</td></tr>`).join('')+
       '</tbody></table></div>';
   }
 }
@@ -407,7 +413,7 @@ function openModal(n){
     <div class="row"><span>${T("nat")}</span><b>${NAT(d.nat)}</b></div>
     <div class="row"><span>${T("iqama")}</span><div><b dir="ltr">${d.iq}</b><button class="cp" data-c="${d.iq}">${T("copy")}</button></div></div>
     <div class="row"><span>${T("mobile")}</span><div><b dir="ltr">${d.ph}</b><button class="cp" data-c="${d.ph}">${T("copy")}</button></div></div>
-    <div class="sjbox"><label for="sjIn">${T("sj")}</label><input id="sjIn" type="text" maxlength="80" placeholder="${T('sjPh')}" value="${esc(SJ[d.n]||'')}" autocomplete="off" enterkeyhint="done"><button type="button" class="btn pri sjsave" id="sjSave">${T('save')}</button><small id="sjSt"></small><small id="sjConn" class="conn">${DB_STATE==='none'?T('connNone'):''}</small></div>
+    <div class="sjbox"><label for="sjIn">${T("sj")}</label><input id="sjIn" type="text" maxlength="80" placeholder="${T('sjPh')}" value="${esc(sjT(d.n))}" autocomplete="off" enterkeyhint="done"><button type="button" class="btn pri sjsave" id="sjSave">${T('save')}</button><div class="sjtr" id="sjTr">${trHtml(SJ[d.n])}</div><small id="sjSt"></small><small id="sjConn" class="conn">${DB_STATE==='none'?T('connNone'):''}</small></div>
     <div class="row"><span>${T('photoLbl')}</span><b>${hasPic(d)?T('avail'):T('unavail')}${OV[d.n]?`<span class="newb">${T('updated')}</span>`:''}</b></div>
     <div class="acts">
       <a class="btn pri call" href="tel:+966${d.ph.slice(1)}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>${T("call")} <span dir="ltr">${d.ph}</span></a>
@@ -465,58 +471,133 @@ async function revert(n){
 
 
 // suggested job: explicit save; shared db when available, this-device fallback otherwise
-function LOCAL_SJ(){try{return JSON.parse(localStorage.getItem('sj_local')||'{}')||{};}catch{return {};}}
-function setLocal(n,val){try{const m=LOCAL_SJ(); if(val) m[n]=val; else m[n]=''; localStorage.setItem('sj_local',JSON.stringify(m)); return true;}catch{return false;}}
-
+const toE = v => !v ? null : (typeof v==='string' ? {text:v,ar:'',bn:''} : (v.text ? {text:String(v.text),ar:String(v.ar||''),bn:String(v.bn||'')} : null));
+function trHtml(e){ if(!e||(!e.ar&&!e.bn)) return ''; return `<span><b>${T('arLbl')}:</b> ${esc(e.ar||e.text)}</span><span lang="bn"><b>${T('bnLbl')}:</b> ${esc(e.bn||e.text)}</span>`; }
+function LOCAL_SJ(){try{const m=JSON.parse(localStorage.getItem('sj_local')||'{}')||{}; const o={}; for(const k in m) o[k]=m[k]?toE(m[k]):''; return o;}catch{return {};}}
+function setLocal(n,e){try{const m=JSON.parse(localStorage.getItem('sj_local')||'{}')||{}; m[n]=e||''; localStorage.setItem('sj_local',JSON.stringify(m)); return true;}catch{return false;}}
 function getDB(){
   if(DB) return Promise.resolve(DB);
   if(!dbPromise) dbPromise=(async()=>{try{ if(window.claude&&claude.use){ const d=await withTimeout(claude.use('db'),12000); if(d) DB=d; } }catch(e){console.warn(e);} DB_STATE=DB?'shared':'none'; updConn(); dbPromise=null; return DB;})();
   return dbPromise;
 }
+const docOf = e => ({text:e.text, ar:e.ar||'', bn:e.bn||'', updatedAt:new Date().toISOString()});
 let syncing=false;
 async function syncLocal(){
   if(!DB||syncing) return; const m=LOCAL_SJ(); const keys=Object.keys(m); if(!keys.length) return; syncing=true;
-  for(const k of keys){ try{ if(m[k]) await DB.doc('jobs/'+k).set({text:m[k],updatedAt:new Date().toISOString()}); else await DB.doc('jobs/'+k).delete();
-      const cur=LOCAL_SJ(); delete cur[k]; try{localStorage.setItem('sj_local',JSON.stringify(cur));}catch{} }catch(e){console.warn('sync',e); break;} }
+  for(const k of keys){ try{ if(m[k]) await DB.doc('jobs/'+k).set(docOf(m[k])); else await DB.doc('jobs/'+k).delete();
+      const cur=JSON.parse(localStorage.getItem('sj_local')||'{}'); delete cur[k]; try{localStorage.setItem('sj_local',JSON.stringify(cur));}catch{} }catch(e){console.warn('sync',e); break;} }
   syncing=false;
 }
+
+// ---------- translation (any language -> Arabic + Bengali) ----------
+const DICT=[ // [arabic, bengali, ...other spellings]
+ ['اجازة','ছুটি','leave','vacation','ছুটিতে'],
+ ['الصيانة و التشغيل','রক্ষণাবেক্ষণ ও পরিচালনা','operation and maintenance','o&m'],
+ ['حارس','প্রহরী','guard','security','security guard','watchman','নিরাপত্তারক্ষী','দারোয়ান'],
+ ['حداد','লোহার মিস্ত্রি','blacksmith','smith','ironsmith'],
+ ['سواق','চালক','driver','ড্রাইভার'],
+ ['سواق باص','বাস চালক','bus driver','বাস ড্রাইভার'],
+ ['سواق بوبكات','ববক্যাট চালক','bobcat driver','bobcat operator'],
+ ['سواق شيول','লোডার (শোভেল) চালক','loader driver','shovel driver','loader operator'],
+ ['سواق قلاب','ডাম্প ট্রাক চালক','dump truck driver','tipper driver','ডাম্প ট্রাক ড্রাইভার'],
+ ['سواق ونش','ক্রেন চালক','crane driver','crane operator'],
+ ['سواق تريلا','ট্রেইলার চালক','trailer driver'],
+ ['سواق خفيف','হালকা গাড়ির চালক','light driver','light vehicle driver','car driver'],
+ ['سواق ثقيل','ভারী গাড়ির চালক','heavy driver','heavy vehicle driver'],
+ ['شيول','লোডার (শোভেল)','loader','shovel'],
+ ['صيانة','রক্ষণাবেক্ষণ','maintenance'],
+ ['عامل','শ্রমিক','worker','labor','labour','laborer','labourer'],
+ ['عامل حداد','লোহার কাজের শ্রমিক','steel worker','iron worker'],
+ ['عامل رش','স্প্রে শ্রমিক','sprayer','spray worker'],
+ ['عامل كشط','স্ক্র্যাপিং শ্রমিক','scraper','scraping worker'],
+ ['عامل ونش','ক্রেন শ্রমিক','crane worker','rigger'],
+ ['عامل نظافة','পরিচ্ছন্নতা কর্মী','cleaner','cleaning worker','janitor','ক্লিনার'],
+ ['نظافة','পরিচ্ছন্নতা','cleaning'],
+ ['مستودع الانارة','আলোকসজ্জা গুদাম','lighting warehouse'],
+ ['مستودع','গুদাম','warehouse','store','storekeeper'],
+ ['أمين مستودع','গুদামরক্ষক','storekeeper','store keeper','warehouse keeper'],
+ ['مكتب','অফিস','office'],
+ ['اداري','প্রশাসনিক কর্মী','admin','administrative','clerk'],
+ ['كهربائي','ইলেকট্রিশিয়ান','electrician','বৈদ্যুতিক মিস্ত্রি'],
+ ['سباك','প্লাম্বার','plumber','নলকূপ মিস্ত্রি'],
+ ['لحام','ওয়েল্ডার','welder','ঝালাইকারী'],
+ ['نجار','কাঠমিস্ত্রি','carpenter'],
+ ['دهان','রংমিস্ত্রি','painter'],
+ ['بناء','রাজমিস্ত্রি','mason','builder'],
+ ['ميكانيكي','মেকানিক','mechanic'],
+ ['فني','টেকনিশিয়ান','technician'],
+ ['فني تكييف','এসি টেকনিশিয়ান','ac technician','hvac technician'],
+ ['مشرف','সুপারভাইজার','supervisor','foreman','ফোরম্যান'],
+ ['طباخ','বাবুর্চি','cook','chef','রাঁধুনি'],
+ ['مزارع','কৃষক','farmer','বাগানের মালী'],
+ ['بستاني','মালী','gardener'],
+ ['مساعد','সহকারী','helper','assistant'],
+ ['مراسل','বার্তাবাহক','messenger','office boy'],
+];
+const nk = s => norm(String(s||'').trim()).replace(/[.,،؛;:!?"'()\-_/]+/g,' ').replace(/\s+/g,' ').trim();
+const DICT_IDX=(()=>{const m=new Map(); for(const row of DICT){ const e={ar:row[0],bn:row[1]}; for(const w of row) m.set(nk(w),e);} return m;})();
+function localTr(text){ const e=DICT_IDX.get(nk(text)); return e?{ar:e.ar,bn:e.bn}:null; }
+const hasAr = s => /[؀-ۿ]/.test(s), hasBn = s => /[ঀ-৿]/.test(s);
+let SAMPLE=undefined; // undefined: not checked, null: unavailable
+async function getSample(){ if(SAMPLE!==undefined) return SAMPLE; try{ SAMPLE = (window.claude&&claude.use) ? await withTimeout(claude.use('sample'),12000) : null; }catch{ SAMPLE=null; } return SAMPLE; }
+async function translate(text){
+  const loc=localTr(text);
+  if(loc) return loc;
+  const s=await getSample();
+  if(s){
+    try{
+      const r=await withTimeout(s.json(
+        'Translate this job title / occupation, written by a supervisor in Saudi Arabia (it may be in any language, dialect or misspelled), into Arabic and into Bengali. '
+        +'Use the short, common job-title wording a worker would understand. If it is already in one of those languages, keep it (fixing spelling) and translate to the other. '
+        +'Reply with only JSON like {"ar":"سواق قلاب","bn":"ডাম্প ট্রাক চালক"}.\n\nText: '+JSON.stringify(text),
+        {modelTier:'quick', cache:{gcTime:86400000}}), 25000);
+      if(r && typeof r.ar==='string' && typeof r.bn==='string' && r.ar.trim() && r.bn.trim()) return {ar:r.ar.trim().slice(0,80), bn:r.bn.trim().slice(0,80)};
+    }catch(e){ console.warn('translate',e); if(e&&['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(e.code)) SAMPLE=null; }
+  }
+  // no translator available: keep the text for whichever language it is written in
+  return {ar: hasAr(text)?text:'', bn: hasBn(text)?text:''};
+}
+
+const MEM_SJ={}; // entries made this session (kept on screen even if storage is unavailable)
+function showSJ(n,e){ if(e){SJ[n]=e;MEM_SJ[n]=e;} else {delete SJ[n];MEM_SJ[n]='';} render(); flashRow(n); if(openN===n&&$('#sjTr')) $('#sjTr').innerHTML=trHtml(e); }
+function flashRow(n){ const tr=document.querySelector(`tr.r[data-n="${n}"]`); if(!tr) return; tr.classList.remove('flash'); void tr.offsetWidth; tr.classList.add('flash'); }
 let sjBusy=false;
 function sjStatus(msg,cls){ const el=$('#sjSt'); if(el){ el.textContent=msg; el.className=cls||''; } }
 function updConn(){ const el=$('#sjConn'); if(!el) return; el.textContent = DB_STATE==='none' ? T('connNone') : ''; }
-const MEM_SJ={}; // values entered this session (kept on screen even if storage is unavailable)
-function showSJ(n,val){ if(val){SJ[n]=val;MEM_SJ[n]=val;} else {delete SJ[n];MEM_SJ[n]='';} render(); flashRow(n); }
-function flashRow(n){ const tr=document.querySelector(`tr.r[data-n="${n}"]`); if(!tr) return; tr.classList.remove('flash'); void tr.offsetWidth; tr.classList.add('flash'); }
 async function saveSJ(n,val){
   if(sjBusy) return; sjBusy=true;
   val=(val||'').trim();
   const btn=$('#sjSave'); if(btn) btn.disabled=true;
-  showSJ(n,val);                       // appears in the main table right away
-  sjStatus(T('saving'));
-  let result='fail';
+  let entry=null, result='fail';
   try{
+    if(val){
+      const quick=localTr(val);
+      entry={text:val, ar:quick?quick.ar:(hasAr(val)?val:''), bn:quick?quick.bn:(hasBn(val)?val:'')};
+      showSJ(n,entry);                                   // appears in the table right away
+      if(!quick){ sjStatus(T('translating')); const tr=await translate(val); entry={text:val, ar:tr.ar, bn:tr.bn}; showSJ(n,entry); }
+    } else showSJ(n,null);
+    sjStatus(T('saving'));
     const db = DB || (DB_STATE==='none' ? null : await getDB());
     if(db){
-      try{
-        await withTimeout(val ? db.doc('jobs/'+n).set({text:val,updatedAt:new Date().toISOString()}) : db.doc('jobs/'+n).delete(), 10000);
-        result='shared';
-      }catch(e){ console.error(e); if(e&&e.code==='invalid_argument') result='noperm'; }
+      try{ await withTimeout(entry ? db.doc('jobs/'+n).set(docOf(entry)) : db.doc('jobs/'+n).delete(), 10000); result='shared'; }
+      catch(e){ console.error(e); if(e&&e.code==='invalid_argument') result='noperm'; }
     }
-    if(result!=='shared' && result!=='noperm' && setLocal(n,val)) result='local';
+    if(result!=='shared' && result!=='noperm' && setLocal(n,entry)) result='local';
   } finally {
     sjBusy=false; const b=$('#sjSave'); if(b) b.disabled=false;
     const msg={shared:[T('savedOk'),'ok'],local:[T('savedLocal'),'warn'],noperm:[T('noPerm'),'err'],fail:[T('saveFail'),'err']}[result];
     if(openN===n) sjStatus(msg[0],msg[1]);
-    if(result==='shared'||result==='local'){ setTimeout(()=>{ if(openN===n){ closeModal(); toast(msg[0]); setTimeout(()=>flashRow(n),50);} },700); }
+    if(result==='shared'||result==='local'){ setTimeout(()=>{ if(openN===n){ closeModal(); toast(msg[0]); setTimeout(()=>flashRow(n),50);} },1400); }
     else toast(msg[0]);
   }
 }
 // keep the input focused while tapping Save (stops iOS keyboard close from moving the button away)
 $('#mBody').addEventListener('pointerdown',e=>{ if(e.target.closest('#sjSave')) e.preventDefault(); });
 $('#mBody').addEventListener('mousedown',e=>{ if(e.target.closest('#sjSave')) e.preventDefault(); });
-$('#mBody').addEventListener('input',e=>{if(e.target.id!=='sjIn')return;sjStatus((e.target.value.trim()!==(SJ[openN]||''))?T('unsaved'):'');});
+$('#mBody').addEventListener('input',e=>{if(e.target.id!=='sjIn')return;sjStatus((e.target.value.trim()!==sjT(openN))?T('unsaved'):'');});
 $('#mBody').addEventListener('click',e=>{const b=e.target.closest('#sjSave');if(!b)return;e.preventDefault();const inp=$('#sjIn');saveSJ(openN,inp?inp.value:'');if(inp)inp.blur();});
 $('#mBody').addEventListener('keydown',e=>{if(e.target.id==='sjIn'&&e.key==='Enter'){e.preventDefault();saveSJ(openN,e.target.value);e.target.blur();}});
-Object.assign(SJ,Object.fromEntries(Object.entries(LOCAL_SJ()).filter(([k,v])=>v)));
+{ const l=LOCAL_SJ(); for(const k in l) if(l[k]) SJ[k]=l[k]; }
 
 applyLang(); renderStats(); renderJobs(); render();
 (async()=>{
@@ -532,8 +613,8 @@ applyLang(); renderStats(); renderJobs(); render();
     },err=>console.warn('db',err));
     if(db) db.collection('jobs').onSnapshot(s=>{
       for(const k in SJ) delete SJ[k];
-      s.docs.forEach(doc=>{const v=doc.data(); if(v&&typeof v.text==='string'&&v.text) SJ[+doc.id]=v.text;});
-      Object.assign(SJ,LOCAL_SJ(),MEM_SJ); for(const k in SJ) if(!SJ[k]) delete SJ[k]; render(); const inp=$('#sjIn'); if(inp&&document.activeElement!==inp&&openN!=null) inp.value=SJ[openN]||'';
+      s.docs.forEach(doc=>{const e=toE(doc.data()); if(e) SJ[+doc.id]=e;});
+      Object.assign(SJ,LOCAL_SJ(),MEM_SJ); for(const k in SJ) if(!SJ[k]) delete SJ[k]; render(); const inp=$('#sjIn'); if(inp&&document.activeElement!==inp&&openN!=null){ inp.value=sjT(openN); if($('#sjTr')) $('#sjTr').innerHTML=trHtml(SJ[openN]); }
       syncLocal();
     },err=>console.warn('db',err));
     refreshAll();
