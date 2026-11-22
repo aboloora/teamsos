@@ -20,7 +20,7 @@
   if (APP_URL.indexOf('script.google.com') === -1) {
     document.write('<div class="msg">لم يُضَف رابط تطبيق الويب بعد.<br>افتح ملف index.html وضع الرابط في المتغير APP_URL.</div>');
   } else {
-    document.write('<iframe src="' + APP_URL + '" allow="clipboard-write" title="بيانات العاملين"></iframe>');
+    document.write('<iframe src="' + APP_URL + '" allow="clipboard-write; geolocation" title="بيانات العاملين"></iframe>');
   }
 </script>
 </body>
